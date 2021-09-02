@@ -11,7 +11,7 @@ from scenedetect.stats_manager import StatsManager
 
 # For content-aware scene detection:
 from scenedetect.detectors.content_detector import ContentDetector
-
+import ffmpeg
 import configparser
 import logging
 import sys
@@ -649,11 +649,27 @@ def video(
     # fps = video_reader.get_meta_data()["fps"]
     # num_frames = video_reader.count_frames()
     # video_reader.close()
+    # split out audio
+
+
     video_reader = VideoReader(str(input.absolute()), ctx=cpu(0))
     fps = video_reader.get_avg_fps()
     num_frames = len(video_reader)
-
     project_path = output.parent.joinpath(f"{output.stem}").absolute()
+
+    #split out audio
+    out = str(project_path)
+    out_path = out + "/scenes/audio.aac"
+    file_exists = Path(out_path)
+    if not file_exists.is_file():
+        cmd = (
+            ffmpeg.input(input.resolve())
+            .output(out_path)
+        )
+        ffmpeg.run(cmd)
+    else:
+        pass
+
     ai_processed_path = project_path.joinpath("scenes")
     scenes_ini = project_path.joinpath("scenes.ini")
     frames_todo: List[Tuple[int, int]] = []
