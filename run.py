@@ -657,19 +657,6 @@ def video(
     num_frames = len(video_reader)
     project_path = output.parent.joinpath(f"{output.stem}").absolute()
 
-    #split out audio
-    out = str(project_path)
-    out_path = out + "/scenes/audio.aac"
-    file_exists = Path(out_path)
-    if not file_exists.is_file():
-        cmd = (
-            ffmpeg.input(input.resolve())
-            .output(out_path)
-        )
-        ffmpeg.run(cmd)
-    else:
-        pass
-
     ai_processed_path = project_path.joinpath("scenes")
     scenes_ini = project_path.joinpath("scenes.ini")
     frames_todo: List[Tuple[int, int]] = []
@@ -685,6 +672,19 @@ def video(
                 frames_processed.append((int(start_frame), int(end_frame)))
             else:
                 frames_todo.append((int(start_frame), int(end_frame)))
+        # split out audio
+        out = str(project_path)
+        out_path = out + "/scenes/audio.aac"
+        file_exists = Path(out_path)
+        if not file_exists.is_file():
+            cmd = (
+                ffmpeg.input(input.resolve())
+                    .output(out_path)
+            )
+            ffmpeg.run(cmd)
+        else:
+            pass
+
     elif detect:
         resume_mode = False
         scenes = []
@@ -693,11 +693,12 @@ def video(
         stats_manager = StatsManager()
         scene_manager = SceneManager(stats_manager)
         scene_manager.add_detector(ContentDetector())
-        scene_list = []
-
-        video_manager.set_downscale_factor()
+        scene_manager.add_detector(
+            ContentDetector(threshold=12))
+        video_manager.set_downscale_factor(12)
         video_manager.start()
         scene_manager.detect_scenes(frame_source=video_manager)
+        scene_list = []
         scene_list = scene_manager.get_scene_list()
         print('List of scenes obtained:')
         scenes = []
