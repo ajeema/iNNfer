@@ -662,6 +662,7 @@ def video(
     frames_todo: List[Tuple[int, int]] = []
     frames_processed: List[Tuple[int, int]] = []
     config = configparser.ConfigParser()
+
     if project_path.is_dir():
         resume_mode = True
         log.info(f'Resuming project "{project_path}"')
@@ -672,18 +673,7 @@ def video(
                 frames_processed.append((int(start_frame), int(end_frame)))
             else:
                 frames_todo.append((int(start_frame), int(end_frame)))
-        # split out audio
-        out = str(project_path)
-        out_path = out + "/scenes/audio.aac"
-        file_exists = Path(out_path)
-        if not file_exists.is_file():
-            cmd = (
-                ffmpeg.input(input.resolve())
-                    .output(out_path)
-            )
-            ffmpeg.run(cmd)
-        else:
-            pass
+
 
     elif detect:
         resume_mode = False
@@ -704,7 +694,6 @@ def video(
         scenes = []
         for i, scene in enumerate(scene_list):
                 scenes.append((scene[0].get_frames()+1, + scene[1].get_frames(), i))
-        print(scenes)
 
     # else:
     #     resume_mode = False
@@ -738,6 +727,19 @@ def video(
 
         with open(scenes_ini, "w") as configfile:
             config.write(configfile)
+        # split out audio
+        out = str(project_path)
+        out_path = out + "/audio.aac"
+        file_exists = Path(out_path)
+        if not file_exists.is_file():
+            commands = {
+                "c:a": "copy",
+            }
+            cmd = (
+                ffmpeg.input(input.resolve())
+                    .output(out_path, **commands)
+            )
+            ffmpeg.run(cmd)
 
     with Progress(
         "[progress.description]{task.description}",
