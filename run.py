@@ -694,23 +694,24 @@ def video(
         scenes = []
         for i, scene in enumerate(scene_list):
                 scenes.append((scene[0].get_frames()+1, + scene[1].get_frames(), i))
+        print(scenes)
 
-    # else:
-    #     resume_mode = False
-    #     scenes = []
-    #     with get_console().status("Dividing the video into scenes..."):
-    #         last_scene_frame = 0
-    #         for i in range(250, num_frames, 250):
-    #             scenes.append((last_scene_frame + 1, i))
-    #             last_scene_frame = i
-    #         if len(scenes) == 0:
-    #             scenes.append((1, num_frames))
-    #         if last_scene_frame != num_frames:
-    #             scenes.append((last_scene_frame + 1, num_frames))
-    #
-    #     log.info(
-    #         f"Video divided into {len(scenes)} scene{'' if len(scenes)==1 else 's'}."
-    #     )
+    else:
+        resume_mode = False
+        scenes = []
+        with get_console().status("Dividing the video into scenes..."):
+            last_scene_frame = 0
+            for i in range(250, num_frames, 250):
+                scenes.append((last_scene_frame + 1, i))
+                last_scene_frame = i
+            if len(scenes) == 0:
+                scenes.append((1, num_frames))
+            if last_scene_frame != num_frames:
+                scenes.append((last_scene_frame + 1, num_frames))
+
+        log.info(
+            f"Video divided into {len(scenes)} scene{'' if len(scenes)==1 else 's'}."
+        )
 
         ai_processed_path.mkdir(parents=True, exist_ok=True)
         if num_frames != scenes[-1][1]:
@@ -729,7 +730,8 @@ def video(
             config.write(configfile)
         # split out audio
         out = str(project_path)
-        out_path = out + "/audio.aac"
+        clean_name, seperator, extension = output.name.partition('.')
+        out_path = out + f"/{clean_name}.aac"
         file_exists = Path(out_path)
         if not file_exists.is_file():
             commands = {
