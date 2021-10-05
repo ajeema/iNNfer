@@ -9,4 +9,3 @@ rawpy
 rich
 scikit-image
 torch
-ffmpeg-python

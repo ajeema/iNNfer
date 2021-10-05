@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.DS_Store
+.idea/aws.xml
+input/2xESRGAN.pth
+*.pth
+*.mp4
+output/output/scenes.ini

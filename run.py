@@ -657,12 +657,24 @@ def video(
     num_frames = len(video_reader)
     project_path = output.parent.joinpath(f"{output.stem}").absolute()
 
+    #split out audio
+    out = str(project_path)
+    out_path = out + "/scenes/audio.aac"
+    file_exists = Path(out_path)
+    if not file_exists.is_file():
+        cmd = (
+            ffmpeg.input(input.resolve())
+            .output(out_path)
+        )
+        ffmpeg.run(cmd)
+    else:
+        pass
+
     ai_processed_path = project_path.joinpath("scenes")
     scenes_ini = project_path.joinpath("scenes.ini")
     frames_todo: List[Tuple[int, int]] = []
     frames_processed: List[Tuple[int, int]] = []
     config = configparser.ConfigParser()
-
     if project_path.is_dir():
         resume_mode = True
         log.info(f'Resuming project "{project_path}"')
@@ -673,8 +685,6 @@ def video(
                 frames_processed.append((int(start_frame), int(end_frame)))
             else:
                 frames_todo.append((int(start_frame), int(end_frame)))
-
-
     elif detect:
         resume_mode = False
         scenes = []
@@ -683,12 +693,11 @@ def video(
         stats_manager = StatsManager()
         scene_manager = SceneManager(stats_manager)
         scene_manager.add_detector(ContentDetector())
-        scene_manager.add_detector(
-            ContentDetector(threshold=12))
-        video_manager.set_downscale_factor(12)
+        scene_list = []
+
+        video_manager.set_downscale_factor()
         video_manager.start()
         scene_manager.detect_scenes(frame_source=video_manager)
-        scene_list = []
         scene_list = scene_manager.get_scene_list()
         print('List of scenes obtained:')
         scenes = []
@@ -696,22 +705,22 @@ def video(
                 scenes.append((scene[0].get_frames()+1, + scene[1].get_frames(), i))
         print(scenes)
 
-    else:
-        resume_mode = False
-        scenes = []
-        with get_console().status("Dividing the video into scenes..."):
-            last_scene_frame = 0
-            for i in range(250, num_frames, 250):
-                scenes.append((last_scene_frame + 1, i))
-                last_scene_frame = i
-            if len(scenes) == 0:
-                scenes.append((1, num_frames))
-            if last_scene_frame != num_frames:
-                scenes.append((last_scene_frame + 1, num_frames))
-
-        log.info(
-            f"Video divided into {len(scenes)} scene{'' if len(scenes)==1 else 's'}."
-        )
+    # else:
+    #     resume_mode = False
+    #     scenes = []
+    #     with get_console().status("Dividing the video into scenes..."):
+    #         last_scene_frame = 0
+    #         for i in range(250, num_frames, 250):
+    #             scenes.append((last_scene_frame + 1, i))
+    #             last_scene_frame = i
+    #         if len(scenes) == 0:
+    #             scenes.append((1, num_frames))
+    #         if last_scene_frame != num_frames:
+    #             scenes.append((last_scene_frame + 1, num_frames))
+    #
+    #     log.info(
+    #         f"Video divided into {len(scenes)} scene{'' if len(scenes)==1 else 's'}."
+    #     )
 
         ai_processed_path.mkdir(parents=True, exist_ok=True)
         if num_frames != scenes[-1][1]:
@@ -728,20 +737,6 @@ def video(
 
         with open(scenes_ini, "w") as configfile:
             config.write(configfile)
-        # split out audio
-        out = str(project_path)
-        clean_name, seperator, extension = output.name.partition('.')
-        out_path = out + f"/{clean_name}.aac"
-        file_exists = Path(out_path)
-        if not file_exists.is_file():
-            commands = {
-                "c:a": "copy",
-            }
-            cmd = (
-                ffmpeg.input(input.resolve())
-                    .output(out_path, **commands)
-            )
-            ffmpeg.run(cmd)
 
     with Progress(
         "[progress.description]{task.description}",
